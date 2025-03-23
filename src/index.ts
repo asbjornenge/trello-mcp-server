@@ -35,6 +35,7 @@ import { ServiceFactory } from "./services/service-factory.js";
 import { TrelloService } from "./services/trello-service.js";
 import { trelloTools } from "./tools/trello-tools.js";
 import { trelloToolHandlers } from "./tools/trello-tool-handlers.js";
+import { startHttpServer } from "./http-server.js";
 
 // Redirect console.log and console.error to stderr to avoid interfering with MCP protocol
 const originalConsoleLog = console.log;
@@ -163,10 +164,22 @@ async function main() {
             }
         });
 
-        // Connect to transport
-        const transport = new StdioServerTransport();
-        await server.connect(transport);
-
+        // Start HTTP server if enabled
+        if (config.http.enabled) {
+            try {
+                const httpServer = await startHttpServer(server, config);
+                console.log(`Trello MCP Server running on HTTP at http://${config.http.host}:${config.http.port}${config.http.path}`);
+            } catch (error) {
+                console.error("Failed to start HTTP server:", error);
+                console.log("Falling back to stdio transport...");
+            }
+        } else {
+            console.log("HTTP server disabled. Using stdio transport only.");
+        }
+        
+        // Always connect to stdio transport as a fallback or for backward compatibility
+        const stdioTransport = new StdioServerTransport();
+        await server.connect(stdioTransport);
         console.log("Trello MCP Server running on stdio");
     } catch (error) {
         console.error("Failed to start server:", error);

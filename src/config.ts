@@ -44,6 +44,14 @@ export interface Config {
     serviceUrl: string;
     serviceTimeout: number;
 
+    // HTTP Server Configuration
+    http: {
+        enabled: boolean;
+        host: string;
+        port: number;
+        path: string;
+    };
+
     // Optional Settings
     debug: boolean;
     logLevel: 'debug' | 'info' | 'warn' | 'error';
@@ -64,8 +72,16 @@ const configuration: Config = {
     },
 
     // Service Configuration
-    serviceUrl: envArgs.SERVICE_URL || process.env.SERVICE_URL || 'https://api.example.com',
+    serviceUrl: envArgs.SERVICE_URL || process.env.SERVICE_URL || 'https://api.trello.com/1',
     serviceTimeout: parseInt(envArgs.SERVICE_TIMEOUT || process.env.SERVICE_TIMEOUT || '30000', 10),
+
+    // HTTP Server Configuration
+    http: {
+        enabled: (envArgs.HTTP_ENABLED || process.env.HTTP_ENABLED || 'true').toLowerCase() === 'true',
+        host: envArgs.HTTP_HOST || process.env.HTTP_HOST || 'localhost',
+        port: parseInt(envArgs.HTTP_PORT || process.env.HTTP_PORT || '3000', 10),
+        path: envArgs.HTTP_PATH || process.env.HTTP_PATH || '/mcp'
+    },
 
     // Optional Settings
     debug: (envArgs.DEBUG || process.env.DEBUG || 'false').toLowerCase() === 'true',

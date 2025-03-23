@@ -6,6 +6,7 @@ A Model Context Protocol (MCP) server that provides tools for interacting with t
 
 - **Trello Integration**: Complete access to Trello boards, lists, cards, and more
 - **Comprehensive API Coverage**: Support for all major Trello operations
+- **Dual Transport Support**: Use either HTTP or stdio communication
 - **Modular Architecture**: Clear separation of concerns with a well-defined structure
 - **Type Safety**: Full TypeScript support with proper typing for Trello objects
 - **Error Handling**: Robust error management throughout the codebase
@@ -42,6 +43,7 @@ trello-mcp-server/
 │   │   └── trello-tool-handlers.ts # Combined tool handlers
 │   ├── types/          # TypeScript type definitions
 │   │   └── trello-types.ts        # Trello type definitions
+│   ├── http-server.ts  # HTTP server implementation
 │   ├── config.ts       # Configuration management
 │   └── index.ts        # Main entry point
 ├── .env.example        # Example environment variables
@@ -84,6 +86,14 @@ trello-mcp-server/
 
    You can obtain these from the [Trello Developer Portal](https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/).
 
+5. Optionally, configure the HTTP server settings:
+   ```
+   HTTP_ENABLED=true
+   HTTP_HOST=localhost
+   HTTP_PORT=3000
+   HTTP_PATH=/mcp
+   ```
+
 ### Building and Running
 
 1. Build the project:
@@ -95,6 +105,50 @@ trello-mcp-server/
    ```bash
    npm start
    ```
+
+## HTTP Server
+
+The server supports HTTP transport using Server-Sent Events (SSE) in addition to the standard stdio transport, allowing clients to connect over HTTP instead of stdin/stdout.
+
+### How It Works
+
+The HTTP server:
+- Listens for GET requests at `/mcp` to establish SSE connections
+- Accepts POST requests at `/mcp/message/{sessionId}` for client messages
+- Uses session IDs to track connections
+- Provides CORS support for web clients
+
+### Connecting to the HTTP Server
+
+Clients can connect to the server using:
+
+```
+GET http://localhost:3000/mcp
+```
+
+This establishes an SSE connection. The server will respond with a session ID that should be used for sending messages.
+
+Messages can be sent to the server using:
+
+```
+POST http://localhost:3000/mcp/message/{sessionId}
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "list_tools",
+  "params": {}
+}
+```
+
+### Disabling HTTP
+
+If you prefer to use only stdio transport, you can disable the HTTP server by setting:
+
+```
+HTTP_ENABLED=false
+```
 
 ## Available Tools
 
@@ -198,9 +252,17 @@ The server uses a centralized configuration system in `src/config.ts`. Configura
 - Command line arguments (with `--env KEY=VALUE`)
 - Default values in the code
 
-Required environment variables:
+### Required Environment Variables
+
 - `TRELLO_API_KEY` - Your Trello API key
 - `TRELLO_TOKEN` - Your Trello API token
+
+### HTTP Configuration
+
+- `HTTP_ENABLED` - Whether to enable the HTTP server (default: `true`)
+- `HTTP_HOST` - The hostname to bind the HTTP server to (default: `localhost`)
+- `HTTP_PORT` - The port to listen on (default: `3000`)
+- `HTTP_PATH` - The base path for the HTTP server (default: `/mcp`)
 
 ## Error Handling
 
