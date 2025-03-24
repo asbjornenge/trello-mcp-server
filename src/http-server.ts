@@ -17,11 +17,21 @@ const sessions = new Map<string, SSEServerTransport>();
 
 /**
  * Extracts the session ID from the request URL
+ * Supports both path parameter format (/mcp/message/{sessionId})
+ * and query parameter format (/mcp/message?sessionId={sessionId})
  */
 function extractSessionId(req: IncomingMessage): string | null {
     const url = req.url || '';
-    const match = url.match(/\/mcp\/message\/([^/]+)/);
-    return match ? match[1] : null;
+    
+    // First try path parameter format
+    const pathMatch = url.match(/\/mcp\/message\/([^/?]+)/);
+    if (pathMatch) {
+        return pathMatch[1];
+    }
+    
+    // Then try query parameter format
+    const queryMatch = url.match(/\?.*sessionId=([^&]+)/);
+    return queryMatch ? queryMatch[1] : null;
 }
 
 /**
@@ -75,7 +85,9 @@ export async function startHttpServer(mcpServer: Server, config: Config): Promis
             });
         }
         // Handle messages (POST)
-        else if (req.method === 'POST' && req.url?.startsWith('/mcp/message/')) {
+        else if (req.method === 'POST' && 
+                (req.url?.startsWith('/mcp/message/') || 
+                 req.url?.startsWith('/mcp/message?'))) {
             // Extract session ID from URL
             const sessionId = extractSessionId(req);
             
